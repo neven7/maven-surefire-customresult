@@ -30,11 +30,11 @@ import org.apache.maven.surefire.suite.RunResult;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Provides reporting modules on the plugin side.
@@ -42,6 +42,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * Keeps a centralized count of test run results.
  *
  * @author Kristian Rosenvold
+ * 
+ * modify by  hugang
+ * stdout success and skipped 
  */
 public class DefaultReporterFactory
     implements ReporterFactory
@@ -53,7 +56,8 @@ public class DefaultReporterFactory
 
     private final StatisticsReporter statisticsReporter;
 
-    private final Collection<TestSetRunListener> listeners = new ConcurrentLinkedQueue<TestSetRunListener>();
+    private final List<TestSetRunListener> listeners =
+        Collections.synchronizedList( new ArrayList<TestSetRunListener>() );
 
     // from "<testclass>.<testmethod>" -> statistics about all the runs for flaky tests
     private Map<String, List<TestMethodStats>> flakyTests;
@@ -63,6 +67,16 @@ public class DefaultReporterFactory
 
     // from "<testclass>.<testmethod>" -> statistics about all the runs for error tests
     private Map<String, List<TestMethodStats>> errorTests;
+    
+    // added by hugang, from "<testclass>.<testmethod>" -> statistics about all the runs for success tests
+    private Map<String, List<TestMethodStats>> successTests;
+    
+    
+    // added by hugang, from "<testclass>.<testmethod>" -> statistics about all the runs for skipped tests
+    private Map<String, List<TestMethodStats>> skippedTests;
+    
+    
+    
 
     public DefaultReporterFactory( StartupReportConfiguration reportConfiguration )
     {
@@ -96,11 +110,11 @@ public class DefaultReporterFactory
                                     reportConfiguration.isTrimStackTrace(),
                                     ConsoleReporter.PLAIN.equals( reportConfiguration.getReportFormat() ),
                                     reportConfiguration.isBriefOrPlainFormat() );
-        addListener( testSetRunListener );
+        listeners.add( testSetRunListener );
         return testSetRunListener;
     }
 
-    final void addListener( TestSetRunListener listener )
+    public void addListener( TestSetRunListener listener )
     {
         listeners.add( listener );
     }
@@ -121,6 +135,7 @@ public class DefaultReporterFactory
         return new DefaultDirectConsoleReporter( reportConfiguration.getOriginalSystemOut() );
     }
 
+    // 测试开始
     public void runStarting()
     {
         final DefaultDirectConsoleReporter consoleReporter = createConsoleLogger();
@@ -130,6 +145,7 @@ public class DefaultReporterFactory
         consoleReporter.info( "-------------------------------------------------------" );
     }
 
+    // 测试结束
     private void runCompleted()
     {
         final DefaultDirectConsoleReporter logger = createConsoleLogger();
@@ -139,13 +155,35 @@ public class DefaultReporterFactory
             logger.info( "Results :" );
             logger.info( "" );
         }
+        // 输出不同类型用例信息
         boolean printedFailures = printTestFailures( logger, TestResultType.failure );
         printedFailures |= printTestFailures( logger, TestResultType.error );
         printedFailures |= printTestFailures( logger, TestResultType.flake );
+        
+        
+        // added by hugang， 添加success and skipped用例详细
+        boolean printedSuccessSkipped = printTestSuccessSkipped( logger, TestResultType.success );
+        printedSuccessSkipped |= printTestSuccessSkipped( logger, TestResultType.skipped );
+        
         if ( printedFailures )
         {
             logger.info( "" );
         }
+        
+        if ( printedSuccessSkipped )
+        {
+            logger.info( "" );
+        }
+        
+        // 输出failed 和 error的用例集， 作为下次重跑物料
+        //  private Map<String, List<TestMethodStats>> failedTests;
+        //  private Map<String, List<TestMethodStats>> errorTests;
+//        logger.info( failedTests.toString() );
+//        logger.info( "" );
+//        logger.info( errorTests.toString() );
+        
+        
+        // globalStats.getSummary() 打印数量
         logger.info( globalStats.getSummary() );
         logger.info( "" );
     }
@@ -232,6 +270,9 @@ public class DefaultReporterFactory
         flakyTests = new TreeMap<String, List<TestMethodStats>>();
         failedTests = new TreeMap<String, List<TestMethodStats>>();
         errorTests = new TreeMap<String, List<TestMethodStats>>();
+        // added by hugang, 存success 和 skpped 用例信息
+        successTests = new TreeMap<String, List<TestMethodStats>>();
+        skippedTests = new TreeMap<String, List<TestMethodStats>>();
 
         Map<String, List<TestMethodStats>> mergedTestHistoryResult = new HashMap<String, List<TestMethodStats>>();
         // Merge all the stats for tests from listeners
@@ -257,13 +298,15 @@ public class DefaultReporterFactory
 
         // Update globalStatistics by iterating through mergedTestHistoryResult
         int completedCount = 0, skipped = 0;
-
+        // 遍历所有的类，判断每一个类中的方法执行结果，放到对应的map中；
+        // TestMethodStats每个测试方法信息
         for ( Map.Entry<String, List<TestMethodStats>> entry : mergedTestHistoryResult.entrySet() )
         {
             List<TestMethodStats> testMethodStats = entry.getValue();
             String testClassMethodName = entry.getKey();
             completedCount++;
 
+            // 将每个测试方法的执行结果添加到resultTypeList中
             List<ReportEntryType> resultTypeList = new ArrayList<ReportEntryType>();
             for ( TestMethodStats methodStats : testMethodStats )
             {
@@ -272,7 +315,7 @@ public class DefaultReporterFactory
 
             TestResultType resultType = getTestResultType( resultTypeList,
                                                            reportConfiguration.getRerunFailingTestsCount() );
-
+            // 根据一个类的不同方法执行结果，放到对应的map中
             switch ( resultType )
             {
                 case success:
@@ -286,8 +329,12 @@ public class DefaultReporterFactory
                         }
                     }
                     completedCount += successCount - 1;
+                    // added by hugang, 把success 用例信息，put 到map中
+                    successTests.put( testClassMethodName, testMethodStats );
                     break;
                 case skipped:
+                    // added by hugang, 把skipped 用例信息，put 到map中
+                    skippedTests.put( testClassMethodName, testMethodStats );
                     skipped++;
                     break;
                 case flake:
@@ -315,6 +362,7 @@ public class DefaultReporterFactory
      * @param type   the type of results to be printed, could be error, failure or flake
      * @return {@code true} if printed some lines
      */
+    private String statckInfo = "CustomResult Failed Cases StackTrace";
     // Use default visibility for testing
     boolean printTestFailures( DefaultDirectConsoleReporter logger, TestResultType type )
     {
@@ -337,7 +385,8 @@ public class DefaultReporterFactory
 
         if ( !testStats.isEmpty() )
         {
-            logger.info( type.getLogPrefix() );
+              // 被注释，添加到每行用例信息前，便于正则匹配
+//            logger.info( type.getLogPrefix() );
             printed = true;
         }
 
@@ -347,12 +396,20 @@ public class DefaultReporterFactory
             List<TestMethodStats> testMethodStats = entry.getValue();
             if ( testMethodStats.size() == 1 )
             {
+                // 被注释
                 // No rerun, follow the original output format
-                logger.info( "  " + testMethodStats.get( 0 ).getStackTraceWriter().smartTrimmedStackTrace() );
+                // logger.info( "  " + testMethodStats.get( 0 ).getStackTraceWriter().smartTrimmedStackTrace() );
+                // added by hugang , 每行用例信息前，便于正则匹配
+                // 打印失败信息
+                logger.info( statckInfo +  "---"
+                                        + testMethodStats.get( 0 ).getStackTraceWriter().smartTrimmedStackTrace() );
+                // 只打印失败的类方法
+                logger.info( type.getLogPrefix() +  "---"
+                        + testMethodStats.get( 0 ).getTestClassMethodName() );
             }
             else
             {
-                logger.info( entry.getKey() );
+                logger.info( statckInfo +  "---" + entry.getKey() );
                 for ( int i = 0; i < testMethodStats.size(); i++ )
                 {
                     StackTraceWriter failureStackTrace = testMethodStats.get( i ).getStackTraceWriter();
@@ -365,22 +422,74 @@ public class DefaultReporterFactory
                         logger.info( "  Run " + ( i + 1 ) + ": " + failureStackTrace.smartTrimmedStackTrace() );
                     }
                 }
+                // 只打印失败的类方法
+                logger.info( type.getLogPrefix() +  "---"
+                        + testMethodStats.get( 0 ).getTestClassMethodName() );
                 logger.info( "" );
             }
         }
         return printed;
     }
+    
+    // 打印成功和skipped用例
+    boolean printTestSuccessSkipped( DefaultDirectConsoleReporter logger, TestResultType type )
+    {
+        boolean printed = false;
+        final Map<String, List<TestMethodStats>> testStats;
+        switch ( type )
+        {
+            // added by hugang；支持success and skipped
+            case success:
+                testStats = successTests;
+                break;
+            case skipped:
+                testStats = skippedTests;
+                break;
+            default:
+                return printed;
+        }
 
+        if ( !testStats.isEmpty() )
+        {
+              // 被注释，添加到每行用例信息前，便于正则匹配
+//            logger.info( type.getLogPrefix() );
+            printed = true;
+        }
+
+        for ( Map.Entry<String, List<TestMethodStats>> entry : testStats.entrySet() )
+        {
+            printed = true;
+            List<TestMethodStats> testMethodStats = entry.getValue();
+            if ( testMethodStats.size() == 1 )
+            {
+                // 被注释
+                // No rerun, follow the original output format
+                // logger.info( "  " + testMethodStats.get( 0 ).getStackTraceWriter().smartTrimmedStackTrace() );
+                // added by hugang , 每行用例信息前，便于正则匹配
+                logger.info( type.getLogPrefix() +  "---" + testMethodStats.get( 0 ).getTestClassMethodName() );
+            }
+            else
+            {
+                logger.info( entry.getKey() );
+                for ( int i = 0; i < testMethodStats.size(); i++ )
+                {
+                     logger.info( type.getLogPrefix() +  "---" + testMethodStats.get( i ).getTestClassMethodName() );
+                }
+                logger.info( "" );
+            }
+        }
+        return printed;
+    }
     // Describe the result of a given test
     static enum TestResultType
     {
 
-        error( "Tests in error: " ),
-        failure( "Failed tests: " ),
-        flake( "Flaked tests: " ),
-        success( "Success: " ),
-        skipped( "Skipped: " ),
-        unknown( "Unknown: " );
+        error( "CustomResult Test Error info: " ),
+        failure( "CustomResult Test Fail info: " ),
+        flake( "CustomResult Test Flaked info: " ),
+        success( "CustomResult Test Success info: " ),
+        skipped( "CustomResult Test Skipped info: " ),
+        unknown( "CustomResult Test Unknown info: " );
 
         private final String logPrefix;
 
