@@ -401,8 +401,11 @@ public class DefaultReporterFactory
                 // logger.info( "  " + testMethodStats.get( 0 ).getStackTraceWriter().smartTrimmedStackTrace() );
                 // added by hugang , 每行用例信息前，便于正则匹配
                 // 打印失败信息
+                
+                // 将错误追踪栈中换行符去掉(hamcrest匹配器错误信息输出多行)，只输出一行，便于正则匹配
+                String strFailStrace = testMethodStats.get( 0 ).getStackTraceWriter().smartTrimmedStackTrace() + "";
                 logger.info( statckInfo +  "---"
-                                        + testMethodStats.get( 0 ).getStackTraceWriter().smartTrimmedStackTrace() );
+                        + strFailStrace.replaceAll( "\n", "" ) );
                 // 只打印失败的类方法
                 logger.info( type.getLogPrefix() +  "---"
                         + testMethodStats.get( 0 ).getTestClassMethodName() );

@@ -21,16 +21,26 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <parent>
+ <parent>
     <groupId>org.apache.maven.surefire</groupId>
     <artifactId>surefire</artifactId>
     <version>2.20-SNAPSHOT</version>
   </parent>
-
-  <groupId>org.apache.maven.plugins</groupId>
+  
+ <!--  <parent>
+  		<groupId>com.weibo.qa</groupId>
+		<artifactId>weibo-contentqa-surefire-customresult</artifactId>
+		<version>2.20</version>
+  </parent> -->
+	
+  <!-- <groupId>org.apache.maven.plugins</groupId>
+  <artifactId>maven-surefire-plugin</artifactId>
+  <packaging>maven-plugin</packaging> -->
+	
+ <groupId>org.apache.maven.plugins</groupId>
   <artifactId>maven-surefire-plugin</artifactId>
   <packaging>maven-plugin</packaging>
-
+ 
   <name>Maven Surefire Plugin</name>
   <description>Maven Surefire MOJO in maven-surefire-plugin.</description>
 

@@ -26,9 +26,17 @@
     <artifactId>surefire</artifactId>
     <version>2.20-SNAPSHOT</version>
   </parent>
+  
+ <!--  <parent>
+    <groupId>com.weibo.qa</groupId>
+    <artifactId>weibo-contentqa-surefire-customresult</artifactId>
+	<version>2.20</version>
+  </parent> -->
 
+  
   <artifactId>maven-surefire-common</artifactId>
-
+  
+	
   <name>Maven Surefire Common</name>
   <description>API used in Surefire and Failsafe MOJO.</description>
 
