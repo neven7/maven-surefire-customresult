@@ -362,7 +362,7 @@ public class DefaultReporterFactory
      * @param type   the type of results to be printed, could be error, failure or flake
      * @return {@code true} if printed some lines
      */
-    private String statckInfo = "CustomResult Failed Cases StackTrace";
+    private String statckInfo = "CustomResult Failed StackTrace";
     // Use default visibility for testing
     boolean printTestFailures( DefaultDirectConsoleReporter logger, TestResultType type )
     {
@@ -385,8 +385,8 @@ public class DefaultReporterFactory
 
         if ( !testStats.isEmpty() )
         {
-              // 被注释，添加到每行用例信息前，便于正则匹配
-//            logger.info( type.getLogPrefix() );
+            // 被注释，添加到每行用例信息前，便于正则匹配
+            // logger.info( type.getLogPrefix() );
             printed = true;
         }
 
@@ -404,15 +404,18 @@ public class DefaultReporterFactory
                 
                 // 将错误追踪栈中换行符去掉(hamcrest匹配器错误信息输出多行)，只输出一行，便于正则匹配
                 String strFailStrace = testMethodStats.get( 0 ).getStackTraceWriter().smartTrimmedStackTrace() + "";
-                logger.info( statckInfo +  "---"
+                logger.info( statckInfo +  "##"
                         + strFailStrace.replaceAll( "\n", "" ) );
                 // 只打印失败的类方法
-                logger.info( type.getLogPrefix() +  "---"
+                logger.info( type.getLogPrefix() +  "##"
                         + testMethodStats.get( 0 ).getTestClassMethodName() );
             }
             else
             {
-                logger.info( statckInfo +  "---" + entry.getKey() );
+                // 多个结果，比如@BeforeClass,@Before中失败; @BeforeClass失败，输出类似：
+                // com.weibo.cases.maincase.XiaoyuGroupStatusStatusBVTTest.
+                // com.weibo.cases.maincase.XiaoyuGroupStatusStatusBVTTest
+                logger.info( statckInfo +  "##" + entry.getKey() );
                 for ( int i = 0; i < testMethodStats.size(); i++ )
                 {
                     StackTraceWriter failureStackTrace = testMethodStats.get( i ).getStackTraceWriter();
@@ -425,9 +428,6 @@ public class DefaultReporterFactory
                         logger.info( "  Run " + ( i + 1 ) + ": " + failureStackTrace.smartTrimmedStackTrace() );
                     }
                 }
-                // 只打印失败的类方法
-                logger.info( type.getLogPrefix() +  "---"
-                        + testMethodStats.get( 0 ).getTestClassMethodName() );
                 logger.info( "" );
             }
         }
@@ -469,14 +469,14 @@ public class DefaultReporterFactory
                 // No rerun, follow the original output format
                 // logger.info( "  " + testMethodStats.get( 0 ).getStackTraceWriter().smartTrimmedStackTrace() );
                 // added by hugang , 每行用例信息前，便于正则匹配
-                logger.info( type.getLogPrefix() +  "---" + testMethodStats.get( 0 ).getTestClassMethodName() );
+                logger.info( type.getLogPrefix() +  "##" + testMethodStats.get( 0 ).getTestClassMethodName() );
             }
             else
             {
                 logger.info( entry.getKey() );
                 for ( int i = 0; i < testMethodStats.size(); i++ )
                 {
-                     logger.info( type.getLogPrefix() +  "---" + testMethodStats.get( i ).getTestClassMethodName() );
+                     logger.info( type.getLogPrefix() +  "##" + testMethodStats.get( i ).getTestClassMethodName() );
                 }
                 logger.info( "" );
             }
@@ -487,12 +487,12 @@ public class DefaultReporterFactory
     static enum TestResultType
     {
 
-        error( "CustomResult Test Error info: " ),
-        failure( "CustomResult Test Fail info: " ),
-        flake( "CustomResult Test Flaked info: " ),
-        success( "CustomResult Test Success info: " ),
-        skipped( "CustomResult Test Skipped info: " ),
-        unknown( "CustomResult Test Unknown info: " );
+        error( "CustomResult Error" ),
+        failure( "CustomResult Fail" ),
+        flake( "CustomResult Flaked" ),
+        success( "CustomResult Success" ),
+        skipped( "CustomResult Skipped" ),
+        unknown( "CustomResult Unknown" );
 
         private final String logPrefix;
 
