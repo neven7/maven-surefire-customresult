@@ -24,12 +24,11 @@
   <parent>
     <groupId>org.apache.maven.surefire</groupId>
     <artifactId>surefire</artifactId>
-    <version>2.19-SNAPSHOT</version>
+    <version>2.19.1</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
   <artifactId>maven-surefire-common</artifactId>
-
   <name>Maven Surefire Common</name>
 
   <prerequisites>
