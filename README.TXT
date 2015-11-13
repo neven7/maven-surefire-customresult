@@ -49,12 +49,8 @@ CustomResult Skipped@skipped信息
 
 CustomResult Success@成功信息
 
-结果比照：
-默认surefire Result：
-![这里写图片描述](http://img.blog.csdn.net/20151113092650360)
-
-maven-surefire-customresult Result:
-![这里写图片描述](http://img.blog.csdn.net/20151113092708318)
+结果比照
+参见：http://blog.csdn.net/neven7/article/details/49803267
 
 使用方法：
 https://github.com/neven7/maven-surefire-customresult 选择分支 Branch: extensions-2.19
