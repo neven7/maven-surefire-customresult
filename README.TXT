@@ -38,7 +38,7 @@ public static <T> void assertThat(String reason, T actual, Matcher<? super T> ma
 实现自定义输出格式：
 为了便于mvn test迭代重试，故要统一输出格式，否则需正则匹配各种不样的格式，开销大且易漏掉失败用例，修改了maven surefire源码，统一输出结果并将成功和skipped的用例信息也打印出来，方便统计结果信息
 
-当你执行mvn test -D=TestClass时，终端结果输出格式统一输出如下（并且每条用例信息都为1行，方便正则匹配）：
+当你执行mvn test -Dtest=TestClass时，终端结果输出格式统一输出如下（并且每条用例信息都为1行，方便正则匹配）：
 CustomResult Failed StackTrace@错误栈信息
 
 CustomResult Fail@失败信息
