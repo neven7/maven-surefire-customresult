@@ -1,5 +1,16 @@
 maven-surefire-customresult
 
+### 结果比照：
+
+默认surefire Result：
+![这里写图片描述](http://img.blog.csdn.net/20151113092650360)
+
+maven-surefire-customresult Result:
+![这里写图片描述](http://img.blog.csdn.net/20151113092708318)
+
+
+
+
 背景：自定义输出mvn surefire结果， 默认的结果只有Failed 和 Error的失败信息，并且打印的结果格式多样，不方便结果统计和正则匹配失败用例。
 默认surefire插件输出结果几种常见的格式：
 
@@ -49,8 +60,7 @@ CustomResult Skipped@skipped信息
 
 CustomResult Success@成功信息
 
-结果比照
-参见：http://blog.csdn.net/neven7/article/details/49803267
+
 
 使用方法：
 https://github.com/neven7/maven-surefire-customresult 选择分支 Branch: extensions-2.19
